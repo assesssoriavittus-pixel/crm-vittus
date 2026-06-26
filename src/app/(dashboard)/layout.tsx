@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { useEffect, useState } from 'react';
 import React, { useState, useEffect } from 'react';
 import { NAV_ITEMS } from '@/lib/constants';
 
@@ -67,11 +69,32 @@ const getIcon = (iconName: string, active: boolean) => {
   }
 };
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [isAuthorized, setIsAuthorized] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
   const [channelsExpanded, setChannelsExpanded] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        router.push('/login');
+      } else {
+        setIsAuthorized(true);
+      }
+    };
+    
+    checkAuth();
+  }, [router]);
 
   useEffect(() => {
     if (darkMode) {
@@ -82,6 +105,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       document.body.style.backgroundColor = '#f4f5f8';
     }
   }, [darkMode]);
+
+  if (!isAuthorized) {
+    return <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-primary)', color: 'white' }}>Verificando acesso...</div>;
+  }
 
   return (
     <div className="dashboard-layout">
