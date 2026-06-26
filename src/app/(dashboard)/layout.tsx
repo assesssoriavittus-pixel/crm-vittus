@@ -139,7 +139,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '13px', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  Sandro
+                  Colaborador Vittus
                   <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--status-success)' }}></span>
                 </span>
                 <span style={{ fontSize: '10px', color: '#8e8e93' }}>Diretor Vittus</span>

@@ -181,7 +181,7 @@ export default function DashboardPage() {
     return (
       <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '32px', minHeight: '100vh', background: 'var(--bg-primary)' }}>
         <div>
-          <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>Olá Sandro,</span>
+          <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>Olá Equipe,</span>
           <h1 style={{ fontSize: '36px', fontWeight: 800, margin: '4px 0 0 0', letterSpacing: '-0.8px', color: '#ffffff' }}>Carregando painel...</h1>
         </div>
       </div>
@@ -301,7 +301,7 @@ export default function DashboardPage() {
       {/* Greeting and Filters */}
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: '-10px' }}>
         <div>
-          <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>Olá Sandro,</span>
+          <span style={{ fontSize: '13.5px', color: 'var(--text-secondary)', fontWeight: 500 }}>Olá Equipe,</span>
           <h1 style={{ fontSize: '36px', fontWeight: 800, margin: '4px 0 0 0', letterSpacing: '-0.8px', color: '#ffffff' }}>Bem-vindo de volta! 👋</h1>
         </div>
 

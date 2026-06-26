@@ -66,7 +66,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   disabled
-                  value="Sandro"
+                  value="Vittus"
                   style={{ background: '#16161d', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: '8px', color: 'white', fontSize: '13px' }}
                 />
               </div>
