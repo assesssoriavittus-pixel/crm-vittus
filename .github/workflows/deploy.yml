@@ -33,8 +33,8 @@ jobs:
       - name: Build with Next.js
         run: npm run build
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SUPABASE_URL: "https://icmxasjvqdavnkupibng.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImljbXhhc2p2cWRhdm5rdXBpYm5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0NTA4NzYsImV4cCI6MjA5ODAyNjg3Nn0.L-72wFJqci3xpU5gUkxNozPzSHTpbpmkCrRBIt-YtQk"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
