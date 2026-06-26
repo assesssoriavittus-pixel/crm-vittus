@@ -108,7 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             overflow: 'hidden',
             marginBottom: '8px'
           }}>
-            <img src="/logo.png" alt="Vittus Logo" style={{ width: '180px', height: 'auto', flexShrink: 0 }} className="logo-img" />
+            <img src="/crm-vittus/logo.png" alt="Vittus Logo" style={{ width: '180px', height: 'auto', flexShrink: 0 }} className="logo-img" />
           </div>
           
           {/* User Profile Card AT THE TOP (Daniel Wood / Sandro Style) */}
