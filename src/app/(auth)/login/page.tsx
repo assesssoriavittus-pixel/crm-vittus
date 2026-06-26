@@ -37,8 +37,7 @@ export default function LoginPage() {
       <div className={styles.glowOrb}></div>
       <div className={styles.card}>
         <div className={styles.logo}>
-          <h1 className={styles.logoTitle}>VITTUS</h1>
-          <p className={styles.logoSubtitle}>CRM</p>
+          <img src="/crm-vittus/logo.png" alt="Vittus Logo" style={{ width: '220px', height: 'auto', marginBottom: '8px' }} />
         </div>
         
         <form onSubmit={handleLogin} className={styles.form}>
