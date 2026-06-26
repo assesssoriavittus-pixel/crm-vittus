@@ -1,0 +1,75 @@
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
+
+export async function updateSession(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: any[]) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+
+  // Do not run code between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Public API routes — no auth required
+  const isPublicApiRoute =
+    request.nextUrl.pathname.startsWith('/api/leads') ||
+    request.nextUrl.pathname.startsWith('/api/slots') ||
+    request.nextUrl.pathname.startsWith('/api/bookings');
+
+  if (isPublicApiRoute) {
+    return supabaseResponse;
+  }
+
+  // Auth pages — redirect to dashboard if already logged in
+  if (
+    user &&
+    request.nextUrl.pathname.startsWith('/login')
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
+  // Protected routes — redirect to login if not authenticated
+  // TEMPORARIAMENTE DESATIVADO PARA O USUÁRIO VER O FRONTEND:
+  /*
+  if (
+    !user &&
+    !request.nextUrl.pathname.startsWith('/login') &&
+    !request.nextUrl.pathname.startsWith('/api/')
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+  */
+
+  return supabaseResponse;
+}
