@@ -233,56 +233,7 @@ export default function DashboardLayout({
               );
             })}
 
-            {/* Collapsible Acquisition Projects Menu (Matches mockup "Projects") */}
-            <div style={{ marginTop: '8px' }}>
-              <button 
-                onClick={() => setChannelsExpanded(!channelsExpanded)}
-                style={{
-                  width: '100%',
-                  padding: '11px 14px',
-                  borderRadius: '8px',
-                  color: '#545456',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: '11.5px',
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  </svg>
-                  <span>Canais de Leads</span>
-                </div>
-                
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{
-                  transform: channelsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s'
-                }}>
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
 
-              {channelsExpanded && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '28px', marginTop: '4px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', fontSize: '12.5px', color: '#8e8e93' }}>
-                    <span>Quiz Instagram</span>
-                    <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: '4px', color: 'white', fontWeight: 600 }}>60%</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', fontSize: '12.5px', color: '#8e8e93' }}>
-                    <span>Site Vittus</span>
-                    <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: '4px', color: 'white', fontWeight: 600 }}>30%</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '6px', fontSize: '12.5px', color: '#8e8e93' }}>
-                    <span>Google Ads</span>
-                    <span style={{ fontSize: '11px', background: 'rgba(255,255,255,0.03)', padding: '2px 6px', borderRadius: '4px', color: 'white', fontWeight: 600 }}>10%</span>
-                  </div>
-                </div>
-              )}
-            </div>
 
           </nav>
         </div>

@@ -16,6 +16,9 @@ interface CRMContextType {
   updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
   addSale: (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at'>) => void;
   updateGoalProgress: (goalId: string, value: number) => void;
+  addGoal: (goal: Omit<Goal, 'id' | 'created_at'>) => void;
+  updateGoalTarget: (goalId: string, targetValue: number) => void;
+  deleteGoal: (goalId: string) => void;
   loading: boolean;
 }
 
@@ -60,6 +63,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, loadData)
       .subscribe();
 
     return () => {
@@ -159,6 +163,33 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addGoal = async (goalData: Omit<Goal, 'id' | 'created_at'>) => {
+    const { data, error } = await supabase.from('goals').insert([goalData]).select();
+    if (data && data.length > 0) {
+      setGoals([...goals, data[0] as Goal]);
+    } else if (error) {
+      console.error('Erro ao adicionar meta:', error);
+    }
+  };
+
+  const updateGoalTarget = async (goalId: string, targetValue: number) => {
+    const { data, error } = await supabase.from('goals').update({ meta_valor: targetValue }).eq('id', goalId).select();
+    if (data && data.length > 0) {
+      setGoals(goals.map(g => g.id === goalId ? data[0] as Goal : g));
+    } else if (error) {
+      console.error('Erro ao atualizar valor da meta:', error);
+    }
+  };
+
+  const deleteGoal = async (goalId: string) => {
+    const { error } = await supabase.from('goals').delete().eq('id', goalId);
+    if (!error) {
+      setGoals(goals.filter(g => g.id !== goalId));
+    } else {
+      console.error('Erro ao deletar meta:', error);
+    }
+  };
+
   return (
     <CRMContext.Provider
       value={{
@@ -173,6 +204,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateBookingStatus,
         addSale,
         updateGoalProgress,
+        addGoal,
+        updateGoalTarget,
+        deleteGoal,
         loading
       }}
     >
