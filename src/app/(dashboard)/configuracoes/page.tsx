@@ -20,7 +20,8 @@ export default function SettingsPage() {
         setDbStatus('connected');
         setUserEmail(session.user.email || '');
         const profile = team.find(p => p.id === session.user.id);
-        if (profile) setUserName(profile.nome);
+        const metaName = session.user.user_metadata?.nome || session.user.user_metadata?.name || '';
+        setUserName(profile?.nome || metaName || 'Equipe Vittus');
       }
     };
     fetchUser();

@@ -13,7 +13,6 @@ export default function DashboardPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   
-  const [financialTab, setFinancialTab] = useState<'lucro' | 'despesa'>('lucro');
   const [activeDayIndex, setActiveDayIndex] = useState(2); // Default to Wednesday
   
   const [isMounted, setIsMounted] = useState(false);
@@ -46,6 +45,46 @@ export default function DashboardPage() {
   const hWaiting = (countWaiting / maxCount) * 160;
   const hProcessing = (countProcessing / maxCount) * 160;
   const hCancel = (countCancel / maxCount) * 160;
+
+  // Calculate dynamic sales value for each origin
+  const quizInstagramSales = sales
+    .filter(s => s.status === 'fechado')
+    .reduce((acc, s) => {
+      const lead = leads.find(l => l.id === s.lead_id);
+      return lead?.origem === 'quiz-instagram' ? acc + s.valor : acc;
+    }, 0);
+
+  const siteSales = sales
+    .filter(s => s.status === 'fechado')
+    .reduce((acc, s) => {
+      const lead = leads.find(l => l.id === s.lead_id);
+      return lead?.origem === 'site' ? acc + s.valor : acc;
+    }, 0);
+
+  const indicacaoSales = sales
+    .filter(s => s.status === 'fechado')
+    .reduce((acc, s) => {
+      const lead = leads.find(l => l.id === s.lead_id);
+      return lead?.origem === 'indicacao' ? acc + s.valor : acc;
+    }, 0);
+
+  const outrasSales = sales
+    .filter(s => s.status === 'fechado')
+    .reduce((acc, s) => {
+      const lead = leads.find(l => l.id === s.lead_id);
+      return (lead && ['manual', 'google', 'outro'].includes(lead.origem)) ? acc + s.valor : acc;
+    }, 0);
+
+  // Total faturamento closed
+  const totalClosedSalesVal = sales
+    .filter(s => s.status === 'fechado')
+    .reduce((acc, curr) => acc + curr.valor, 0);
+
+  // Representation percentage
+  const quizShare = totalClosedSalesVal > 0 ? (quizInstagramSales / totalClosedSalesVal) * 100 : 0;
+  const siteShare = totalClosedSalesVal > 0 ? (siteSales / totalClosedSalesVal) * 100 : 0;
+  const indicacaoShare = totalClosedSalesVal > 0 ? (indicacaoSales / totalClosedSalesVal) * 100 : 0;
+  const outrasShare = totalClosedSalesVal > 0 ? (outrasSales / totalClosedSalesVal) * 100 : 0;
 
   // --- Real Chart Data Calculation ---
   // X coordinates for 7 points
@@ -394,45 +433,6 @@ export default function DashboardPage() {
               </span>
             </div>
           </div>
-
-          {/* Toggle Tabs inside card */}
-          <div style={{ 
-            background: 'rgba(255,255,255,0.02)', 
-            padding: '4px', 
-            borderRadius: '100px', 
-            display: 'flex', 
-            gap: '4px',
-            border: '1px solid rgba(255,255,255,0.04)'
-          }}>
-            <button 
-              onClick={() => setFinancialTab('lucro')}
-              style={{
-                padding: '8px 20px',
-                borderRadius: '100px',
-                fontSize: '13px',
-                fontWeight: 700,
-                background: financialTab === 'lucro' ? '#212128' : 'transparent',
-                color: financialTab === 'lucro' ? '#ffffff' : 'var(--text-secondary)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              Lucro Total
-            </button>
-            <button 
-              onClick={() => setFinancialTab('despesa')}
-              style={{
-                padding: '8px 20px',
-                borderRadius: '100px',
-                fontSize: '13px',
-                fontWeight: 700,
-                background: financialTab === 'despesa' ? '#212128' : 'transparent',
-                color: financialTab === 'despesa' ? '#ffffff' : 'var(--text-secondary)',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              Despesa Total
-            </button>
-          </div>
         </div>
 
         {/* Premium Interactive SVG Line Chart */}
@@ -525,10 +525,14 @@ export default function DashboardPage() {
               Quiz Instagram
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>R$ 3.236</span>
-              <span style={{ fontSize: '11px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 15l-6-6-6 6"/></svg>
-                12%
+              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(quizInstagramSales)}
+              </span>
+              <span style={{ fontSize: '11px', color: quizInstagramSales > 0 ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
+                {quizInstagramSales > 0 && (
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 15l-6-6-6 6"/></svg>
+                )}
+                {quizShare.toFixed(1).replace('.', ',')}%
               </span>
             </div>
           </div>
@@ -538,10 +542,14 @@ export default function DashboardPage() {
               Site Institucional
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>R$ 3.764</span>
-              <span style={{ fontSize: '11px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M6 9l6 6 6-6"/></svg>
-                3%
+              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(siteSales)}
+              </span>
+              <span style={{ fontSize: '11px', color: siteSales > 0 ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
+                {siteSales > 0 && (
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 15l-6-6-6 6"/></svg>
+                )}
+                {siteShare.toFixed(1).replace('.', ',')}%
               </span>
             </div>
           </div>
@@ -551,10 +559,14 @@ export default function DashboardPage() {
               Indicações
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>R$ 1.800</span>
-              <span style={{ fontSize: '11px', color: '#10b981', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 15l-6-6-6 6"/></svg>
-                8%
+              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(indicacaoSales)}
+              </span>
+              <span style={{ fontSize: '11px', color: indicacaoSales > 0 ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
+                {indicacaoSales > 0 && (
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 15l-6-6-6 6"/></svg>
+                )}
+                {indicacaoShare.toFixed(1).replace('.', ',')}%
               </span>
             </div>
           </div>
@@ -564,10 +576,14 @@ export default function DashboardPage() {
               Outras Origens
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px' }}>
-              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>R$ 1.200</span>
-              <span style={{ fontSize: '11px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
-                <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M6 9l6 6 6-6"/></svg>
-                1.5%
+              <span style={{ fontSize: '20px', fontWeight: 800, color: 'white' }}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(outrasSales)}
+              </span>
+              <span style={{ fontSize: '11px', color: outrasSales > 0 ? '#10b981' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '2px', fontWeight: 700 }}>
+                {outrasSales > 0 && (
+                  <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><path d="M18 15l-6-6-6 6"/></svg>
+                )}
+                {outrasShare.toFixed(1).replace('.', ',')}%
               </span>
             </div>
           </div>
