@@ -11,7 +11,7 @@ interface CRMContextType {
   goals: Goal[];
   team: Profile[];
   addLead: (lead: Omit<Lead, 'id' | 'created_at' | 'updated_at'>) => void;
-  updateLeadStatus: (leadId: string, status: LeadStatus) => void;
+  updateLeadStatus: (leadId: string, status: LeadStatus, vendedor_id?: string) => void;
   addBooking: (booking: Omit<Booking, 'id' | 'created_at' | 'updated_at'>) => void;
   updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
   addSale: (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at'>) => void;
@@ -76,7 +76,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateLeadStatus = async (leadId: string, status: LeadStatus) => {
+  const updateLeadStatus = async (leadId: string, status: LeadStatus, vendedor_id?: string) => {
     const { data, error } = await supabase.from('leads').update({ status }).eq('id', leadId).select();
     if (data && data.length > 0) {
       setLeads(leads.map(l => l.id === leadId ? data[0] as Lead : l));
@@ -88,7 +88,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const lead = leads.find((l) => l.id === leadId);
           addSale({
             lead_id: leadId,
-            vendedor_id: lead?.responsavel_id || '00000000-0000-0000-0000-000000000002',
+            vendedor_id: vendedor_id || lead?.responsavel_id || '00000000-0000-0000-0000-000000000002',
             servico_id: 'serv-generic',
             servico_nome: lead?.segmento === 'E-commerce / Varejo' ? 'Assessoria de Tráfego Pago' : 'Estruturação Comercial (CRM/Processos)',
             valor: lead?.valor_estimado || 4000,

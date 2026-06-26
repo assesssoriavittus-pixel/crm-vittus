@@ -6,7 +6,7 @@ import { LEAD_STATUS_CONFIG, LEAD_ORIGEM_LABELS, KANBAN_COLUMN_ORDER } from '@/l
 import { Lead, LeadStatus, LeadOrigem } from '@/types';
 
 export default function LeadsPage() {
-  const { leads, updateLeadStatus, addLead } = useCRM();
+  const { leads, updateLeadStatus, addLead, team } = useCRM();
   const [isMounted, setIsMounted] = useState(false);
   
   useEffect(() => {
@@ -16,6 +16,10 @@ export default function LeadsPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Closing lead state
+  const [closingLeadId, setClosingLeadId] = useState<string | null>(null);
+  const [selectedVendedor, setSelectedVendedor] = useState<string>('');
 
   // Form State for new lead
   const [newLeadName, setNewLeadName] = useState('');
@@ -155,7 +159,11 @@ export default function LeadsPage() {
                 e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)';
                 const leadId = e.dataTransfer.getData('text/plain');
                 if (leadId) {
-                  updateLeadStatus(leadId, columnId);
+                  if (columnId === 'fechado') {
+                    setClosingLeadId(leadId);
+                  } else {
+                    updateLeadStatus(leadId, columnId);
+                  }
                 }
               }}
               style={{
@@ -354,8 +362,13 @@ export default function LeadsPage() {
               <select 
                 value={selectedLead.status}
                 onChange={(e) => {
-                  updateLeadStatus(selectedLead.id, e.target.value as LeadStatus);
-                  setSelectedLead({ ...selectedLead, status: e.target.value as LeadStatus });
+                  const val = e.target.value as LeadStatus;
+                  if (val === 'fechado') {
+                    setClosingLeadId(selectedLead.id);
+                  } else {
+                    updateLeadStatus(selectedLead.id, val);
+                    setSelectedLead({ ...selectedLead, status: val });
+                  }
                 }}
                 style={{
                   background: 'transparent',
@@ -624,6 +637,100 @@ export default function LeadsPage() {
         </div>
       )}
 
+      {/* Closing Lead Modal */}
+      {closingLeadId && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: '#13131a',
+            padding: '32px',
+            borderRadius: '24px',
+            width: '100%',
+            maxWidth: '400px',
+            border: '1px solid rgba(255,255,255,0.05)'
+          }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>Quem fechou essa venda?</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginBottom: '24px' }}>
+              Selecione o funcionário responsável para que a comissão e as metas sejam calculadas corretamente.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px' }}>
+              <label style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>Vendedor Responsável</label>
+              <select 
+                value={selectedVendedor}
+                onChange={(e) => setSelectedVendedor(e.target.value)}
+                style={{
+                  width: '100%',
+                  background: '#1c1c24',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  color: 'white',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              >
+                <option value="">Selecione...</option>
+                {team.map(member => (
+                  <option key={member.id} value={member.id}>{member.nome}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+              <button 
+                onClick={() => {
+                  setClosingLeadId(null);
+                  setSelectedVendedor('');
+                }}
+                style={{
+                  padding: '12px 24px',
+                  background: 'transparent',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: 500
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => {
+                  if (!selectedVendedor) {
+                    alert('Por favor, selecione o vendedor.');
+                    return;
+                  }
+                  updateLeadStatus(closingLeadId, 'fechado', selectedVendedor);
+                  setClosingLeadId(null);
+                  setSelectedVendedor('');
+                  // Close the selected lead modal if it was open
+                  setSelectedLead(null);
+                }}
+                style={{
+                  padding: '12px 24px',
+                  background: '#0066ff',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  fontWeight: 500
+                }}
+              >
+                Confirmar Venda 🎉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
