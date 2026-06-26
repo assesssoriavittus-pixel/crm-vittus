@@ -1,14 +1,30 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useCRM } from '@/context/CRMContext';
 
 export default function SettingsPage() {
-  const [dbStatus] = useState<'connected' | 'offline'>('offline'); // Offline since Supabase keys aren't set in env yet
+  const [dbStatus, setDbStatus] = useState<'connected' | 'offline'>('offline');
   const [isMounted, setIsMounted] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
+  const { team } = useCRM();
   
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setDbStatus('connected');
+        setUserEmail(session.user.email || '');
+        const profile = team.find(p => p.id === session.user.id);
+        if (profile) setUserName(profile.nome);
+      }
+    };
+    fetchUser();
+  }, [team]);
 
   if (!isMounted) {
     return (
@@ -39,21 +55,16 @@ export default function SettingsPage() {
           <div className="glass-card" style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', color: 'white' }}>Banco de Dados (Supabase)</h3>
             
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#f59e0b' }}></span>
-              <span style={{ fontSize: '13px', color: '#f59e0b', fontWeight: 600 }}>
-                Executando localmente no Frontend (Simulado)
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: dbStatus === 'connected' ? 'rgba(16, 185, 129, 0.08)' : 'rgba(245, 158, 11, 0.08)', border: dbStatus === 'connected' ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)', padding: '12px 16px', borderRadius: '12px', marginBottom: '20px' }}>
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: dbStatus === 'connected' ? '#10b981' : '#f59e0b', boxShadow: dbStatus === 'connected' ? '0 0 8px rgba(16, 185, 129, 0.5)' : 'none' }}></span>
+              <span style={{ fontSize: '13px', color: dbStatus === 'connected' ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                {dbStatus === 'connected' ? 'Conectado à Nuvem (Online)' : 'Executando localmente no Frontend (Simulado)'}
               </span>
             </div>
 
             <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5', margin: '0 0 20px 0' }}>
-              Para conectar o CRM Vittus ao seu banco de dados Supabase na nuvem e salvar os dados permanentemente, configure as variáveis de ambiente no arquivo <strong>.env.local</strong>:
+              O CRM está conectado ao seu banco de dados na nuvem com autenticação segura e leitura em tempo real.
             </p>
-
-            <div style={{ background: '#101014', padding: '16px', borderRadius: '12px', fontSize: '12.5px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.8)', overflowX: 'auto', border: '1px solid rgba(255,255,255,0.05)' }}>
-              NEXT_PUBLIC_SUPABASE_URL=seu_projeto.supabase.co<br />
-              NEXT_PUBLIC_SUPABASE_ANON_KEY=sua_chave_anonima
-            </div>
           </div>
 
           {/* User profile */}
@@ -66,7 +77,7 @@ export default function SettingsPage() {
                 <input 
                   type="text" 
                   disabled
-                  value="Vittus"
+                  value={userName || 'Carregando...'}
                   style={{ background: '#16161d', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: '8px', color: 'white', fontSize: '13px' }}
                 />
               </div>
@@ -75,7 +86,7 @@ export default function SettingsPage() {
                 <input 
                   type="email" 
                   disabled
-                  value="sandro@vittus.com.br"
+                  value={userEmail || 'Carregando...'}
                   style={{ background: '#16161d', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: '8px', color: 'white', fontSize: '13px' }}
                 />
               </div>
@@ -89,11 +100,11 @@ export default function SettingsPage() {
           <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', color: 'white' }}>Integração do Quiz e Site</h3>
           
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5', margin: '0 0 20px 0' }}>
-            Envie automaticamente as respostas do seu <strong>Quiz de Qualificação (quiz-vittus)</strong> ou formulário do <strong>Site Institucional (Site-vITTUS)</strong> para este CRM disparando uma requisição POST na API:
+            Para enviar automaticamente as respostas do seu <strong>Quiz de Qualificação (quiz-vittus)</strong> ou formulário do <strong>Site Institucional (Site-vITTUS)</strong> para o banco, você fará uma requisição POST para a sua <strong>Supabase Edge Function</strong>:
           </p>
 
           <div style={{ background: '#101014', padding: '14px', borderRadius: '12px', fontSize: '12.5px', fontFamily: 'monospace', color: 'var(--accent-primary)', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.05)', fontWeight: 700 }}>
-            POST http://localhost:3000/api/leads
+            POST https://icmxasjvqdavnkupibng.supabase.co/functions/v1/webhook-leads
           </div>
 
           <h4 style={{ fontSize: '13px', fontWeight: 700, color: 'white', marginBottom: '10px' }}>Exemplo de Código JS (Fetch):</h4>
@@ -110,7 +121,7 @@ export default function SettingsPage() {
             maxHeight: '260px',
             lineHeight: '1.5'
           }}>
-            {`fetch('http://seu-crm.com/api/leads', {
+            {`fetch('https://icmxasjvqdavnkupibng.supabase.co/functions/v1/webhook-leads', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

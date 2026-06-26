@@ -35,8 +35,6 @@ export default function DashboardPage() {
   const closedLeads = leads.filter(l => l.status === 'fechado');
   const totalRevenue = sales.filter(s => s.status === 'fechado').reduce((acc, curr) => acc + curr.valor, 0);
   
-  const totalExpenses = 3800 + leads.length * 150; // Dynamic simulation of traffic ads and tools costs
-
   // Status counts mapped to Behance donut chart legend
   const countSuccess = leads.filter(l => l.status === 'fechado').length;
   const countWaiting = leads.filter(l => l.status === 'agendado').length;
@@ -49,63 +47,68 @@ export default function DashboardPage() {
   const hProcessing = (countProcessing / maxCount) * 160;
   const hCancel = (countCancel / maxCount) * 160;
 
-  // Scale chart curves to database totals
-  const scaleFactor = totalRevenue > 0 ? (totalRevenue / 36900) : 1;
-  const weeklyLucroPoints = [
-    { day: 'Seg', date: '24 Jun', value: Math.round(1200 * scaleFactor), x: 20, y: 180 },
-    { day: 'Ter', date: '25 Jun', value: Math.round(3500 * scaleFactor), x: 146.7, y: 130 },
-    { day: 'Qua', date: '26 Jun', value: Math.round(5000 * scaleFactor), x: 273.3, y: 80 },
-    { day: 'Qui', date: '27 Jun', value: Math.round(4200 * scaleFactor), x: 400, y: 110 },
-    { day: 'Sex', date: '28 Jun', value: Math.round(7800 * scaleFactor), x: 526.7, y: 40 },
-    { day: 'Sáb', date: '29 Jun', value: Math.round(6000 * scaleFactor), x: 653.3, y: 70 },
-    { day: 'Dom', date: '30 Jun', value: Math.round(9200 * scaleFactor), x: 780, y: 20 }
-  ];
+  // --- Real Chart Data Calculation ---
+  // X coordinates for 7 points
+  const xCoords = [20, 146.7, 273.3, 400, 526.7, 653.3, 780];
+  
+  // Weekly data (last 7 days)
+  const weeklyPoints = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dateStr = d.toISOString().split('T')[0];
+    const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    
+    // Sum sales for this day
+    const daySales = sales.filter(s => s.status === 'fechado' && (s.data_fechamento === dateStr || (s.created_at && s.created_at.startsWith(dateStr))));
+    const value = daySales.reduce((acc, curr) => acc + curr.valor, 0);
+    
+    return {
+      day: dayNames[d.getDay()],
+      date: `${d.getDate()} ${d.toLocaleString('pt-BR', { month: 'short' }).replace('.', '')}`,
+      value,
+      x: xCoords[i],
+      y: 200 // Default, will calculate below
+    };
+  });
 
-  const expenseScaleFactor = totalExpenses / 11000;
-  const weeklyDespesaPoints = [
-    { day: 'Seg', date: '24 Jun', value: Math.round(800 * expenseScaleFactor), x: 20, y: 200 },
-    { day: 'Ter', date: '25 Jun', value: Math.round(1200 * expenseScaleFactor), x: 146.7, y: 180 },
-    { day: 'Qua', date: '26 Jun', value: Math.round(1500 * expenseScaleFactor), x: 273.3, y: 170 },
-    { day: 'Qui', date: '27 Jun', value: Math.round(1100 * expenseScaleFactor), x: 400, y: 190 },
-    { day: 'Sex', date: '28 Jun', value: Math.round(2500 * expenseScaleFactor), x: 526.7, y: 150 },
-    { day: 'Sáb', date: '29 Jun', value: Math.round(1800 * expenseScaleFactor), x: 653.3, y: 160 },
-    { day: 'Dom', date: '30 Jun', value: Math.round(2100 * expenseScaleFactor), x: 780, y: 155 }
-  ];
+  // Today data (grouped by hours)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaySales = sales.filter(s => s.status === 'fechado' && s.created_at && s.created_at.startsWith(todayStr));
+  
+  const hourlyIntervals = [9, 11, 13, 15, 17, 19, 21];
+  const todayPoints = hourlyIntervals.map((hour, i) => {
+    // Sum sales that happened before this hour (cumulative or just in that bucket? let's do bucket)
+    const bucketSales = todaySales.filter(s => {
+      const saleHour = new Date(s.created_at!).getHours();
+      const prevHour = i === 0 ? 0 : hourlyIntervals[i - 1];
+      return saleHour >= prevHour && saleHour < hour;
+    });
+    const value = bucketSales.reduce((acc, curr) => acc + curr.valor, 0);
+    
+    return {
+      day: `${hour.toString().padStart(2, '0')}h`,
+      date: 'Hoje',
+      value,
+      x: xCoords[i],
+      y: 200
+    };
+  });
 
-  // Daily curves scaled to average daily totals
-  const todayScaleFactor = totalRevenue > 0 ? (totalRevenue / 25000) : 1;
-  const todayLucroPoints = [
-    { day: '09h', date: 'Hoje', value: Math.round(350 * todayScaleFactor), x: 20, y: 180 },
-    { day: '11h', date: 'Hoje', value: Math.round(900 * todayScaleFactor), x: 146.7, y: 140 },
-    { day: '13h', date: 'Hoje', value: Math.round(1500 * todayScaleFactor), x: 273.3, y: 110 },
-    { day: '15h', date: 'Hoje', value: Math.round(1100 * todayScaleFactor), x: 400, y: 130 },
-    { day: '17h', date: 'Hoje', value: Math.round(2200 * todayScaleFactor), x: 526.7, y: 70 },
-    { day: '19h', date: 'Hoje', value: Math.round(1800 * todayScaleFactor), x: 653.3, y: 90 },
-    { day: '21h', date: 'Hoje', value: Math.round(2800 * todayScaleFactor), x: 780, y: 40 }
-  ];
-
-  const todayExpenseScale = totalExpenses / 8000;
-  const todayDespesaPoints = [
-    { day: '09h', date: 'Hoje', value: Math.round(150 * todayExpenseScale), x: 20, y: 195 },
-    { day: '11h', date: 'Hoje', value: Math.round(250 * todayExpenseScale), x: 146.7, y: 190 },
-    { day: '13h', date: 'Hoje', value: Math.round(400 * todayExpenseScale), x: 273.3, y: 180 },
-    { day: '15h', date: 'Hoje', value: Math.round(300 * todayExpenseScale), x: 400, y: 185 },
-    { day: '17h', date: 'Hoje', value: Math.round(600 * todayExpenseScale), x: 526.7, y: 170 },
-    { day: '19h', date: 'Hoje', value: Math.round(500 * todayExpenseScale), x: 653.3, y: 175 },
-    { day: '21h', date: 'Hoje', value: Math.round(800 * todayExpenseScale), x: 780, y: 160 }
-  ];
-
-  const activePoints = timeFilter === 'today'
-    ? (financialTab === 'lucro' ? todayLucroPoints : todayDespesaPoints)
-    : (financialTab === 'lucro' ? weeklyLucroPoints : weeklyDespesaPoints);
+  const activePoints = timeFilter === 'today' ? todayPoints : weeklyPoints;
+  
+  // Calculate Y coordinates based on max value in the active view
+  const maxValue = Math.max(...activePoints.map(p => p.value), 1); // Avoid division by zero
+  activePoints.forEach(p => {
+    // y = 200 is bottom (0 value), y = 20 is top (max value)
+    p.y = 200 - (p.value / maxValue) * 160; 
+  });
 
   const activePoint = activePoints[activeDayIndex];
   
-  const todayTotalRevenue = weeklyLucroPoints[2].value; // Wednesday's (Qua) value as today's faturamento
-  const todayTotalExpenses = weeklyDespesaPoints[2].value; // Wednesday's (Qua) value as today's expenses
-  const displayedValue = timeFilter === 'today'
-    ? (financialTab === 'lucro' ? todayTotalRevenue : todayTotalExpenses)
-    : (financialTab === 'lucro' ? totalRevenue : totalExpenses);
+  // Total value to display
+  const displayedValue = timeFilter === 'today' 
+    ? todayPoints.reduce((acc, curr) => acc + curr.value, 0)
+    : totalRevenue; // Total revenue of all time, or just weekly? Let's show all time for weekly to match old behavior.
 
   const chartPath = activePoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x},${p.y}`).join(' ');
   const areaPath = `${chartPath} L ${activePoints[activePoints.length - 1].x},220 L ${activePoints[0].x},220 Z`;
@@ -314,34 +317,38 @@ export default function DashboardPage() {
           gap: '4px',
           border: '1px solid var(--glass-border)'
         }}>
-          <button 
-            onClick={() => setTimeFilter('today')}
-            style={{
-              padding: '8px 24px',
-              borderRadius: '100px',
-              fontSize: '13px',
-              fontWeight: 700,
-              background: timeFilter === 'today' ? '#212128' : 'transparent',
-              color: timeFilter === 'today' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            Hoje
-          </button>
-          <button 
-            onClick={() => setTimeFilter('week')}
-            style={{
-              padding: '8px 24px',
-              borderRadius: '100px',
-              fontSize: '13px',
-              fontWeight: 700,
-              background: timeFilter === 'week' ? '#212128' : 'transparent',
-              color: timeFilter === 'week' ? '#ffffff' : 'var(--text-secondary)',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            Semana
-          </button>
+          <div style={{ display: 'flex', gap: '16px' }}>
+              <button 
+                className={`tab-btn ${timeFilter === 'week' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('week')}
+                style={{
+                  padding: '8px 24px',
+                  borderRadius: '100px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  background: timeFilter === 'week' ? '#212128' : 'transparent',
+                  color: timeFilter === 'week' ? '#ffffff' : 'var(--text-secondary)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                7 Dias
+              </button>
+              <button 
+                className={`tab-btn ${timeFilter === 'today' ? 'active' : ''}`}
+                onClick={() => setTimeFilter('today')}
+                style={{
+                  padding: '8px 24px',
+                  borderRadius: '100px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  background: timeFilter === 'today' ? '#212128' : 'transparent',
+                  color: timeFilter === 'today' ? '#ffffff' : 'var(--text-secondary)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                Hoje
+              </button>
+            </div>
           
           <button style={{ padding: '8px 14px', color: 'var(--text-secondary)' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -364,12 +371,10 @@ export default function DashboardPage() {
         {/* Metric Title & Chart Tabs */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '32px' }}>
           <div>
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              {financialTab === 'lucro' ? 'Balanço Geral (Lucro)' : 'Balanço Geral (Despesa)'}
-            </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px' }}>
-              <h2 style={{ fontSize: '46px', fontWeight: 800, margin: 0, letterSpacing: '-1.5px', color: '#ffffff' }}>
-                R$ {displayedValue.toLocaleString('pt-BR')}
+            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{timeFilter === 'week' ? 'Vendas Totais' : 'Vendas Hoje'}</span>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: '4px' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 800, margin: 0, letterSpacing: '-1px' }}>
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(displayedValue)}
               </h2>
               <span style={{
                 background: 'rgba(16,185,129,0.1)',
@@ -477,40 +482,13 @@ export default function DashboardPage() {
             style={{ cursor: 'crosshair', overflow: 'visible' }}
           >
             <defs>
-              {/* Gradient for the line stroke */}
-              <linearGradient id="strokeGrad" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#0047ab" />
-                <stop offset="50%" stopColor="#0066ff" />
-                <stop offset="100%" stopColor="#00d4ff" />
-              </linearGradient>
-              {/* Gradient for the area fill */}
-              <linearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0066ff" stopOpacity="0.25" />
-                <stop offset="100%" stopColor="#0066ff" stopOpacity="0.0" />
+              <linearGradient id="gradientArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent-primary)" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="var(--accent-primary)" stopOpacity="0" />
               </linearGradient>
             </defs>
-
-            {/* Horizontal Dashed Gridlines */}
-            <line x1="0" y1="40" x2="800" y2="40" stroke="rgba(255,255,255,0.02)" strokeWidth="1" strokeDasharray="5,5" />
-            <line x1="0" y1="100" x2="800" y2="100" stroke="rgba(255,255,255,0.02)" strokeWidth="1" strokeDasharray="5,5" />
-            <line x1="0" y1="160" x2="800" y2="160" stroke="rgba(255,255,255,0.02)" strokeWidth="1" strokeDasharray="5,5" />
-
-            {/* Area under curve */}
-            <path 
-              d={areaPath} 
-              fill="url(#fillGrad)"
-              style={{ transition: 'all 0.3s ease' }}
-            />
-
-            {/* Smooth Line Path */}
-            <path 
-              d={chartPath} 
-              fill="none" 
-              stroke="url(#strokeGrad)" 
-              strokeWidth="4" 
-              strokeLinecap="round"
-              style={{ transition: 'all 0.3s ease' }}
-            />
+            <path d={areaPath} fill="url(#gradientArea)" />
+            <path d={chartPath} fill="none" stroke="var(--accent-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
 
             {/* Active Anchor Dot */}
             {activePoint && (
