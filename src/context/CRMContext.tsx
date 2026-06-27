@@ -48,9 +48,30 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (leadsRes.data) setLeads(leadsRes.data as Lead[]);
     if (teamRes.data) setTeam(teamRes.data as Profile[]);
-    if (bookingsRes.data) setBookings(bookingsRes.data as Booking[]);
     if (salesRes.data) setSales(salesRes.data as Sale[]);
     if (goalsRes.data) setGoals(goalsRes.data as Goal[]);
+    
+    let allBookings = (bookingsRes.data as Booking[]) || [];
+    
+    // Buscar Google Calendar
+    try {
+      if (typeof window !== 'undefined') {
+        const defaultGcalUrl = 'https://calendar.google.com/calendar/ical/assesssoriavittus%40gmail.com/private-7c76997ced71484669f9e720b7c8ed5b/basic.ics';
+        const gcalUrl = localStorage.getItem('vittus_gcal_url') || defaultGcalUrl;
+        
+        if (gcalUrl) {
+          const res = await fetch(`/api/calendar/sync?url=${encodeURIComponent(gcalUrl)}`);
+          if (res.ok) {
+            const { events } = await res.json();
+            allBookings = [...allBookings, ...events];
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load Google Calendar events:', e);
+    }
+
+    setBookings(allBookings);
     
     setLoading(false);
   };

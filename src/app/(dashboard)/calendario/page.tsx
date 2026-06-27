@@ -264,7 +264,8 @@ export default function CalendarPage() {
               const consultor = team.find(t => t.id === booking.consultor_id);
               
               // Status badges
-              const getStatusBadge = (status: BookingStatus) => {
+              const getStatusBadge = (status: BookingStatus, isGoogleCalendar?: boolean) => {
+                if (isGoogleCalendar) return { bg: 'rgba(234, 67, 53, 0.15)', color: '#ea4335', text: 'Google Agenda' };
                 switch(status) {
                   case 'confirmado':
                     return { bg: 'rgba(59, 130, 246, 0.15)', color: '#3b82f6', text: 'Confirmado' };
@@ -277,7 +278,7 @@ export default function CalendarPage() {
                 }
               };
 
-              const badge = getStatusBadge(booking.status);
+              const badge = getStatusBadge(booking.status, booking.isGoogleCalendar);
 
               return (
                 <div 
@@ -298,11 +299,16 @@ export default function CalendarPage() {
                         {booking.horario_inicio} &mdash; {booking.horario_fim}
                       </span>
                       <h4 style={{ fontSize: '14px', fontWeight: 700, color: 'white', marginTop: '4px' }}>
-                        {lead?.nome || 'Lead Externo'}
+                        {booking.isGoogleCalendar ? booking.title : (lead?.nome || 'Lead Externo')}
                       </h4>
-                      {lead?.empresa && (
+                      {!booking.isGoogleCalendar && lead?.empresa && (
                         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0 0' }}>
                           {lead.empresa} ({lead.segmento})
+                        </p>
+                      )}
+                      {booking.isGoogleCalendar && booking.notas && (
+                        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', margin: '2px 0 0 0', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {booking.notas}
                         </p>
                       )}
                     </div>
@@ -351,7 +357,7 @@ export default function CalendarPage() {
                     <span>Consultor: <strong>{consultor?.nome}</strong></span>
                     
                     {/* Status updater quick buttons */}
-                    {booking.status === 'confirmado' && (
+                    {booking.status === 'confirmado' && !booking.isGoogleCalendar && (
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button 
                           onClick={() => updateBookingStatus(booking.id, 'realizado')}
@@ -577,7 +583,20 @@ export default function CalendarPage() {
 
           </form>
         </div>
-      )}
+      {/* --- Google Calendar Iframe --- */}
+      <div style={{ marginTop: '24px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white', marginBottom: '16px' }}>Visão Completa (Google Agenda)</h3>
+        <div style={{ borderRadius: '24px', overflow: 'hidden', background: '#16161d', border: '1px solid rgba(255,255,255,0.05)', padding: '16px', display: 'flex', justifyContent: 'center' }}>
+          <iframe 
+            src="https://calendar.google.com/calendar/embed?src=assesssoriavittus%40gmail.com&ctz=America%2FSao_Paulo" 
+            style={{ border: 0, borderRadius: '12px' }} 
+            width="100%" 
+            height="600" 
+            frameBorder="0" 
+            scrolling="no"
+          ></iframe>
+        </div>
+      </div>
 
     </div>
   );

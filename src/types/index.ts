@@ -63,22 +63,24 @@ export interface QuizAnswer {
   resposta: string;
 }
 
-export type BookingStatus = 'confirmado' | 'realizado' | 'cancelado' | 'no_show';
-export type BookingTipo = 'diagnostico' | 'followup' | 'proposta';
+export type BookingStatus = 'confirmado' | 'realizado' | 'cancelado' | 'remarcado';
+export type BookingTipo = 'diagnostico' | 'proposta' | 'followup' | 'google_event';
 
 export interface Booking {
   id: string;
-  lead_id: string | null;
-  consultor_id: string | null;
-  data: string; // ISO date string (YYYY-MM-DD)
+  lead_id?: string;
+  consultor_id: string;
+  data: string; // YYYY-MM-DD
   horario_inicio: string; // HH:MM
   horario_fim: string; // HH:MM
   status: BookingStatus;
   tipo: BookingTipo;
-  zoom_link: string | null;
-  notas: string | null;
-  created_at: string;
-  updated_at: string;
+  notas?: string;
+  zoom_link?: string;
+  created_at?: string;
+  updated_at?: string;
+  title?: string;
+  isGoogleCalendar?: boolean;
   // Joined fields
   lead?: Lead;
   consultor?: Profile;
@@ -173,7 +175,11 @@ export interface CreateLeadPayload {
 }
 
 export interface CreateBookingPayload {
-  lead_id: string;
+  lead_id?: string;
+  nome?: string;
+  email?: string;
+  telefone?: string;
+  origem?: LeadOrigem;
   data: string; // YYYY-MM-DD
   horario: string; // HH:MM
   consultor_id?: string;

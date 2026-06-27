@@ -44,12 +44,16 @@ function isOverlapping(
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateBookingPayload = await request.json();
-
-    // ---- Validate required fields ----
-    if (!body.lead_id) {
+    const body: CreateBookingPayload = await request.json();    // ---- Validate required fields ----
+    if (!body.lead_id && (!body.nome || body.nome.trim().length === 0)) {
       return NextResponse.json(
-        { success: false, error: 'lead_id é obrigatório' },
+        { success: false, error: 'lead_id ou nome do lead é obrigatório' },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+    if (!body.lead_id && !body.email && !body.telefone) {
+      return NextResponse.json(
+        { success: false, error: 'E-mail ou telefone é obrigatório se lead_id não for informado' },
         { status: 400, headers: corsHeaders }
       );
     }
@@ -79,12 +83,58 @@ export async function POST(request: NextRequest) {
     const horarioFim = addMinutes(horarioInicio, DEFAULT_MEETING_DURATION);
 
     const supabase = createAdminClient();
+    let resolvedLeadId = body.lead_id;
+
+    // ---- Resolve or create Lead dynamically ----
+    if (!resolvedLeadId) {
+      let existingLead: { id: string } | null = null;
+
+      if (body.email) {
+        const { data } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('email', body.email)
+          .maybeSingle();
+        existingLead = data;
+      }
+
+      if (!existingLead && body.telefone) {
+        const { data } = await supabase
+          .from('leads')
+          .select('id')
+          .eq('telefone', body.telefone)
+          .maybeSingle();
+        existingLead = data;
+      }
+
+      if (existingLead) {
+        resolvedLeadId = existingLead.id;
+      } else {
+        const { data: newLead, error: createLeadErr } = await supabase
+          .from('leads')
+          .insert({
+            nome: body.nome!.trim(),
+            email: body.email || null,
+            telefone: body.telefone || null,
+            origem: body.origem || 'site',
+            status: 'qualificado',
+          })
+          .select('id')
+          .single();
+
+        if (createLeadErr) {
+          console.error('[API /bookings] Failed to create lead dynamically:', createLeadErr);
+          throw createLeadErr;
+        }
+        resolvedLeadId = newLead.id;
+      }
+    }
 
     // ---- Verify lead exists ----
     const { data: lead, error: leadErr } = await supabase
       .from('leads')
       .select('id, nome')
-      .eq('id', body.lead_id)
+      .eq('id', resolvedLeadId)
       .single();
 
     if (leadErr || !lead) {
@@ -132,7 +182,7 @@ export async function POST(request: NextRequest) {
     const { data: booking, error: bookingErr } = await supabase
       .from('bookings')
       .insert({
-        lead_id: body.lead_id,
+        lead_id: resolvedLeadId,
         consultor_id: body.consultor_id || null,
         data: body.data,
         horario_inicio: horarioInicio,
@@ -150,7 +200,7 @@ export async function POST(request: NextRequest) {
     const { error: updateErr } = await supabase
       .from('leads')
       .update({ status: 'agendado' })
-      .eq('id', body.lead_id);
+      .eq('id', resolvedLeadId);
 
     if (updateErr) {
       console.error('[API /bookings] Failed to update lead status:', updateErr);
@@ -162,7 +212,7 @@ export async function POST(request: NextRequest) {
     const activityDesc = `Agendamento criado para ${formattedDate} às ${horarioInicio}`;
 
     const { error: activityErr } = await supabase.from('activities').insert({
-      lead_id: body.lead_id,
+      lead_id: resolvedLeadId,
       user_id: null, // Public API, no authenticated user
       tipo: 'reuniao',
       descricao: activityDesc,

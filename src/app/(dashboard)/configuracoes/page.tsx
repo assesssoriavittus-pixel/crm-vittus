@@ -9,6 +9,7 @@ export default function SettingsPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [userEmail, setUserEmail] = useState('');
   const [userName, setUserName] = useState('');
+  const [gcalUrl, setGcalUrl] = useState('');
   const { team } = useCRM();
   
   useEffect(() => {
@@ -25,7 +26,21 @@ export default function SettingsPage() {
       }
     };
     fetchUser();
+    
+    // Load gcal url
+    if (typeof window !== 'undefined') {
+      const defaultGcalUrl = 'https://calendar.google.com/calendar/ical/assesssoriavittus%40gmail.com/private-7c76997ced71484669f9e720b7c8ed5b/basic.ics';
+      setGcalUrl(localStorage.getItem('vittus_gcal_url') || defaultGcalUrl);
+    }
   }, [team]);
+
+  const saveGcalUrl = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('vittus_gcal_url', gcalUrl);
+      alert('URL do Google Agenda salva com sucesso! Os eventos serão sincronizados no Calendário.');
+      window.location.reload();
+    }
+  };
 
   if (!isMounted) {
     return (
@@ -91,6 +106,29 @@ export default function SettingsPage() {
                   style={{ background: '#16161d', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: '8px', color: 'white', fontSize: '13px' }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Google Calendar Integration */}
+          <div className="glass-card" style={{ background: '#13131a', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '24px' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '16px', color: 'white' }}>Integração com Google Agenda</h3>
+            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+              Cole abaixo o "Endereço secreto em formato iCal" do seu Google Agenda para espelhar os eventos diretamente no CRM.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                type="url" 
+                placeholder="https://calendar.google.com/calendar/ical/..."
+                value={gcalUrl}
+                onChange={(e) => setGcalUrl(e.target.value)}
+                style={{ background: '#16161d', border: '1px solid rgba(255,255,255,0.05)', padding: '10px 14px', borderRadius: '8px', color: 'white', fontSize: '13px', width: '100%' }}
+              />
+              <button 
+                onClick={saveGcalUrl}
+                style={{ background: 'var(--accent-primary)', color: 'white', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, border: 'none', cursor: 'pointer' }}
+              >
+                Salvar Sincronização
+              </button>
             </div>
           </div>
 
