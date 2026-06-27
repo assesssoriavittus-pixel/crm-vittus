@@ -583,6 +583,8 @@ export default function CalendarPage() {
 
           </form>
         </div>
+      )}
+
       {/* --- Google Calendar Iframe --- */}
       <div style={{ marginTop: '24px' }}>
         <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white', marginBottom: '16px' }}>Visão Completa (Google Agenda)</h3>
