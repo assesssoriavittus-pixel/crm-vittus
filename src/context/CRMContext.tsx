@@ -14,6 +14,8 @@ interface CRMContextType {
   updateLeadStatus: (leadId: string, status: LeadStatus, vendedor_id?: string) => void;
   addBooking: (booking: Omit<Booking, 'id' | 'created_at' | 'updated_at'>) => void;
   updateBookingStatus: (bookingId: string, status: Booking['status']) => void;
+  deleteBooking: (bookingId: string) => Promise<boolean>;
+  addTeamMember: (memberData: { email: string; pass: string; nome: string; cargo: string; role: string }) => Promise<{ success: boolean; error?: string }>;
   addSale: (sale: Omit<Sale, 'id' | 'created_at' | 'updated_at'>) => void;
   updateGoalProgress: (goalId: string, value: number) => void;
   addGoal: (goal: Omit<Goal, 'id' | 'created_at'>) => void;
@@ -182,6 +184,46 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const deleteBooking = async (bookingId: string): Promise<boolean> => {
+    const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+    if (!error) {
+      setBookings(bookings.filter(b => b.id !== bookingId));
+      return true;
+    } else {
+      console.error('Erro ao deletar booking:', error);
+      return false;
+    }
+  };
+
+  const addTeamMember = async (memberData: { email: string; pass: string; nome: string; cargo: string; role: string }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.rpc('create_team_member', {
+        p_email: memberData.email,
+        p_password: memberData.pass,
+        p_nome: memberData.nome,
+        p_cargo: memberData.cargo,
+        p_role: memberData.role
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      if (data && data.success === false) {
+        return { success: false, error: data.error };
+      }
+
+      // Reload team data
+      const { data: teamRes } = await supabase.from('profiles').select('*');
+      if (teamRes) setTeam(teamRes as Profile[]);
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('Erro ao adicionar membro da equipe:', err);
+      return { success: false, error: err.message || 'Erro desconhecido' };
+    }
+  };
+
   const deleteGoal = async (goalId: string) => {
     const { error } = await supabase.from('goals').delete().eq('id', goalId);
     if (!error) {
@@ -203,6 +245,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateLeadStatus,
         addBooking,
         updateBookingStatus,
+        deleteBooking,
+        addTeamMember,
         addSale,
         updateGoalProgress,
         addGoal,

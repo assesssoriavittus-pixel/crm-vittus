@@ -6,7 +6,8 @@ import { WEEKDAY_SHORT, MONTH_LABELS } from '@/lib/constants';
 import { Booking, BookingStatus, BookingTipo } from '@/types';
 
 export default function CalendarPage() {
-  const { bookings, leads, team, addBooking, updateBookingStatus } = useCRM();
+  const { bookings, leads, team, addBooking, updateBookingStatus, deleteBooking } = useCRM();
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
@@ -283,6 +284,7 @@ export default function CalendarPage() {
               return (
                 <div 
                   key={booking.id}
+                  onClick={() => setSelectedBooking(booking)}
                   style={{
                     background: '#16161d',
                     border: '1px solid rgba(255,255,255,0.03)',
@@ -290,8 +292,12 @@ export default function CalendarPage() {
                     padding: '16px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px'
+                    gap: '12px',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.15s ease'
                   }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(0, 102, 255, 0.4)'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.03)'}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
@@ -331,6 +337,7 @@ export default function CalendarPage() {
                       href={booking.zoom_link} 
                       target="_blank" 
                       rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
                       style={{
                         background: 'rgba(0, 102, 255, 0.1)',
                         color: 'var(--accent-primary)',
@@ -360,13 +367,13 @@ export default function CalendarPage() {
                     {booking.status === 'confirmado' && !booking.isGoogleCalendar && (
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button 
-                          onClick={() => updateBookingStatus(booking.id, 'realizado')}
+                          onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'realizado'); }}
                           style={{ color: '#10b981', fontWeight: 600 }}
                         >
                           Concluir
                         </button>
                         <button 
-                          onClick={() => updateBookingStatus(booking.id, 'cancelado')}
+                          onClick={(e) => { e.stopPropagation(); updateBookingStatus(booking.id, 'cancelado'); }}
                           style={{ color: '#ef4444', fontWeight: 600 }}
                         >
                           Cancelar
@@ -584,6 +591,147 @@ export default function CalendarPage() {
           </form>
         </div>
       )}
+
+      {/* --- MODAL: Booking Details --- */}
+      {selectedBooking && (() => {
+        const lead = leads.find(l => l.id === selectedBooking.lead_id);
+        const consultor = team.find(t => t.id === selectedBooking.consultor_id);
+        return (
+          <div style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.75)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: '#16161d',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '560px',
+              padding: '32px',
+              boxShadow: 'var(--shadow-lg)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'white', margin: 0 }}>Detalhes do Agendamento</h3>
+                <button 
+                  type="button"
+                  onClick={() => setSelectedBooking(null)}
+                  style={{ color: 'rgba(255,255,255,0.4)', fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Lead Info */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Informações do Lead
+                </span>
+                <div style={{ background: '#1c1c24', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'white' }}>{lead?.nome || 'Lead Externo'}</div>
+                  {lead?.email && <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>E-mail: <strong style={{ color: 'white' }}>{lead.email}</strong></div>}
+                  {lead?.telefone && <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Telefone: <strong style={{ color: 'white' }}>{lead.telefone}</strong></div>}
+                  {lead?.origem && <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Origem: <strong style={{ color: 'white' }}>{lead.origem}</strong></div>}
+                  {lead?.empresa && <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Empresa: <strong style={{ color: 'white' }}>{lead.empresa}</strong></div>}
+                  {lead?.segmento && <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Segmento: <strong style={{ color: 'white' }}>{lead.segmento}</strong></div>}
+                </div>
+              </div>
+
+              {/* Quiz Results */}
+              {lead?.respostas_quiz && lead.respostas_quiz.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                    Respostas do Quiz de Qualificação
+                  </span>
+                  <div style={{ background: '#1c1c24', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '200px', overflowY: 'auto' }}>
+                    {lead.respostas_quiz.map((resp, i) => (
+                      <div key={i} style={{ borderBottom: i < lead.respostas_quiz!.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none', paddingBottom: i < lead.respostas_quiz!.length - 1 ? '10px' : 0 }}>
+                        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>{resp.pergunta}</div>
+                        <div style={{ fontSize: '13.5px', color: 'white', fontWeight: 600, marginTop: '4px' }}>{resp.resposta}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Booking Info */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                  Detalhes da Reunião
+                </span>
+                <div style={{ background: '#1c1c24', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Data: <strong style={{ color: 'white' }}>{selectedBooking.data.split('-').reverse().join('/')}</strong></div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Horário: <strong style={{ color: 'white' }}>{selectedBooking.horario_inicio} - {selectedBooking.horario_fim}</strong></div>
+                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Consultor: <strong style={{ color: 'white' }}>{consultor?.nome || 'Não definido'}</strong></div>
+                  {selectedBooking.zoom_link && (
+                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)' }}>Zoom: <a href={selectedBooking.zoom_link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>Entrar na Reunião</a></div>
+                  )}
+                  {selectedBooking.notas && (
+                    <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', marginTop: '4px', borderTop: '1px solid rgba(255,255,255,0.03)', paddingTop: '8px' }}>
+                      <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', display: 'block', marginBottom: '2px' }}>Observações:</span>
+                      <span style={{ color: 'white', whiteSpace: 'pre-wrap' }}>{selectedBooking.notas}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions Footer */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (confirm('Tem certeza que deseja EXCLUIR este agendamento permanentemente?')) {
+                      const ok = await deleteBooking(selectedBooking.id);
+                      if (ok) {
+                        setSelectedBooking(null);
+                      }
+                    }
+                  }}
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#ef4444',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '100px',
+                    padding: '10px 20px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Excluir Agendamento
+                </button>
+                
+                <button 
+                  type="button"
+                  onClick={() => setSelectedBooking(null)}
+                  style={{
+                    background: 'var(--accent-primary)',
+                    color: 'white',
+                    borderRadius: '100px',
+                    padding: '10px 20px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Fechar
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );

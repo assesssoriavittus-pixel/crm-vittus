@@ -4,12 +4,48 @@ import React, { useState, useEffect } from 'react';
 import { useCRM } from '@/context/CRMContext';
 
 export default function TeamPage() {
-  const { team, leads, bookings, sales } = useCRM();
+  const { team, leads, bookings, sales, addTeamMember } = useCRM();
+  
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nome, setNome] = useState('');
+  const [cargo, setCargo] = useState('');
+  const [role, setRole] = useState('vendedor');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setIsSubmitting(true);
+
+    const result = await addTeamMember({
+      email,
+      pass: password,
+      nome,
+      cargo,
+      role
+    });
+
+    setIsSubmitting(false);
+
+    if (result.success) {
+      setIsAddModalOpen(false);
+      setEmail('');
+      setPassword('');
+      setNome('');
+      setCargo('');
+      setRole('vendedor');
+    } else {
+      setErrorMsg(result.error || 'Erro ao criar usuário');
+    }
+  };
 
   if (!isMounted) {
     return (
@@ -26,9 +62,18 @@ export default function TeamPage() {
     <div style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
       {/* Header */}
-      <div>
-        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Vittus CRM</span>
-        <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '4px 0 0 0', letterSpacing: '-0.5px' }}>Sua Equipe</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', fontWeight: 500 }}>Vittus CRM</span>
+          <h1 style={{ fontSize: '28px', fontWeight: 800, margin: '4px 0 0 0', letterSpacing: '-0.5px' }}>Sua Equipe</h1>
+        </div>
+        <button 
+          onClick={() => setIsAddModalOpen(true)}
+          className="btn btn-primary"
+          style={{ fontWeight: 700, padding: '10px 20px' }}
+        >
+          + Adicionar Membro
+        </button>
       </div>
 
       {/* Team Cards Grid */}
@@ -108,6 +153,168 @@ export default function TeamPage() {
           );
         })}
       </div>
+
+      {/* Modal: Adicionar Membro da Equipe */}
+      {isAddModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <form 
+            onSubmit={handleSubmit}
+            style={{
+              background: '#16161d',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '20px',
+              width: '100%',
+              maxWidth: '480px',
+              padding: '32px',
+              boxShadow: 'var(--shadow-lg)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'white', margin: 0 }}>Adicionar Membro da Equipe</h3>
+              <button 
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                style={{ color: 'rgba(255,255,255,0.4)', fontSize: '20px', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {errorMsg && (
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '12px', borderRadius: '8px', color: '#f87171', fontSize: '13px' }}>
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Nome */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Nome *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ex: João Silva"
+                value={nome}
+                onChange={(e) => setNome(e.target.value)}
+                style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', color: 'white', fontSize: '13.5px', outline: 'none' }}
+              />
+            </div>
+
+            {/* Email */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                E-mail *
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="Ex: joao@vittus.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', color: 'white', fontSize: '13.5px', outline: 'none' }}
+              />
+            </div>
+
+            {/* Senha */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Senha de Acesso *
+              </label>
+              <input
+                type="password"
+                required
+                placeholder="Mínimo 6 caracteres"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', color: 'white', fontSize: '13.5px', outline: 'none' }}
+              />
+            </div>
+
+            {/* Cargo */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Cargo *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="Ex: Closer de Vendas / SDR"
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value)}
+                style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', color: 'white', fontSize: '13.5px', outline: 'none' }}
+              />
+            </div>
+
+            {/* Permissão */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Nível de Acesso *
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', color: 'white', fontSize: '13.5px', outline: 'none' }}
+              >
+                <option value="vendedor">Vendedor (SDR/Closer)</option>
+                <option value="consultor">Consultor (Entrega)</option>
+                <option value="gestor">Gestor (Acesso Médio)</option>
+                <option value="admin">Administrador (Total)</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>
+              <button 
+                type="button"
+                onClick={() => setIsAddModalOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  color: 'white',
+                  borderRadius: '100px',
+                  padding: '10px 20px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  background: 'linear-gradient(135deg, #0052cc 0%, #0066ff 100%)',
+                  color: 'white',
+                  borderRadius: '100px',
+                  padding: '10px 20px',
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: isSubmitting ? 0.7 : 1
+                }}
+              >
+                {isSubmitting ? 'Salvando...' : 'Adicionar Membro'}
+              </button>
+            </div>
+
+          </form>
+        </div>
+      )}
 
     </div>
   );
