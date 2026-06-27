@@ -585,21 +585,6 @@ export default function CalendarPage() {
         </div>
       )}
 
-      {/* --- Google Calendar Iframe --- */}
-      <div style={{ marginTop: '24px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white', marginBottom: '16px' }}>Visão Completa (Google Agenda)</h3>
-        <div style={{ borderRadius: '24px', overflow: 'hidden', background: '#16161d', border: '1px solid rgba(255,255,255,0.05)', padding: '16px', display: 'flex', justifyContent: 'center' }}>
-          <iframe 
-            src="https://calendar.google.com/calendar/embed?src=assesssoriavittus%40gmail.com&ctz=America%2FSao_Paulo" 
-            style={{ border: 0, borderRadius: '12px' }} 
-            width="100%" 
-            height="600" 
-            frameBorder="0" 
-            scrolling="no"
-          ></iframe>
-        </div>
-      </div>
-
     </div>
   );
 }
