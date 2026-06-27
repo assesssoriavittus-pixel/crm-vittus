@@ -60,9 +60,70 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const gcalUrl = localStorage.getItem('vittus_gcal_url') || defaultGcalUrl;
         
         if (gcalUrl) {
-          const res = await fetch(`/api/calendar/sync?url=${encodeURIComponent(gcalUrl)}`);
+          // Usando um proxy CORS público já que o site é estático (Github Pages)
+          const corsUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(gcalUrl)}`;
+          const res = await fetch(corsUrl);
+          
           if (res.ok) {
-            const { events } = await res.json();
+            const text = await res.text();
+            const lines = text.split(/\r?\n/);
+            const events: any[] = [];
+            let currentEvent: any = null;
+
+            for (let i = 0; i < lines.length; i++) {
+              const line = lines[i];
+              if (line.startsWith('BEGIN:VEVENT')) {
+                currentEvent = {};
+              } else if (line.startsWith('END:VEVENT')) {
+                if (currentEvent && currentEvent.start && currentEvent.end) {
+                  const startDate = new Date(currentEvent.start);
+                  const endDate = new Date(currentEvent.end);
+                  
+                  if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+                    const pad = (n: number) => String(n).padStart(2, '0');
+                    
+                    events.push({
+                      id: `gcal-${currentEvent.uid || Math.random().toString(36).substring(2, 9)}`,
+                      consultor_id: 'google-calendar',
+                      data: `${startDate.getFullYear()}-${pad(startDate.getMonth() + 1)}-${pad(startDate.getDate())}`,
+                      horario_inicio: `${pad(startDate.getHours())}:${pad(startDate.getMinutes())}`,
+                      horario_fim: `${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`,
+                      status: 'confirmado',
+                      tipo: 'google_event',
+                      notas: currentEvent.description || '',
+                      title: currentEvent.summary || 'Evento Externo',
+                      zoom_link: currentEvent.location?.includes('http') ? currentEvent.location : '',
+                      isGoogleCalendar: true
+                    });
+                  }
+                }
+                currentEvent = null;
+              } else if (currentEvent) {
+                if (line.startsWith('SUMMARY:')) currentEvent.summary = line.substring(8).trim();
+                else if (line.startsWith('DESCRIPTION:')) currentEvent.description = line.substring(12).trim();
+                else if (line.startsWith('LOCATION:')) currentEvent.location = line.substring(9).trim();
+                else if (line.startsWith('UID:')) currentEvent.uid = line.substring(4).trim();
+                else if (line.startsWith('DTSTART')) {
+                  const parts = line.split(':');
+                  if (parts.length > 1) {
+                    const val = parts[1].trim();
+                    if (val.length >= 15) {
+                      currentEvent.start = `${val.substring(0,4)}-${val.substring(4,6)}-${val.substring(6,8)}T${val.substring(9,11)}:${val.substring(11,13)}:${val.substring(13,15)}Z`;
+                    }
+                  }
+                }
+                else if (line.startsWith('DTEND')) {
+                  const parts = line.split(':');
+                  if (parts.length > 1) {
+                    const val = parts[1].trim();
+                    if (val.length >= 15) {
+                      currentEvent.end = `${val.substring(0,4)}-${val.substring(4,6)}-${val.substring(6,8)}T${val.substring(9,11)}:${val.substring(11,13)}:${val.substring(13,15)}Z`;
+                    }
+                  }
+                }
+              }
+            }
+            
             allBookings = [...allBookings, ...events];
           }
         }

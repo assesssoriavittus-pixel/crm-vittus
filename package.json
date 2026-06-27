@@ -12,7 +12,6 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
     "next": "14.2.21",
-    "node-ical": "^0.26.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
