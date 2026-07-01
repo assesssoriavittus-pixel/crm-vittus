@@ -86,6 +86,21 @@ export interface Booking {
   consultor?: Profile;
 }
 
+export interface Task {
+  id: string;
+  lead_id?: string | null;
+  responsavel_id?: string | null;
+  data: string; // YYYY-MM-DD
+  titulo: string;
+  descricao?: string | null;
+  status: 'pendente' | 'concluida';
+  created_at?: string;
+  updated_at?: string;
+  // Joined fields
+  lead?: Lead;
+  responsavel?: Profile;
+}
+
 export interface ScheduleConfig {
   id: string;
   user_id: string;

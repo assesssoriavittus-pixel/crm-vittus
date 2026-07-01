@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Lead, Booking, Sale, Goal, Profile, LeadStatus, LeadOrigem } from '@/types';
+import { Lead, Booking, Sale, Goal, Profile, LeadStatus, LeadOrigem, Task } from '@/types';
 import { createClient } from '@/lib/supabase/client';
 
 interface CRMContextType {
@@ -21,6 +21,10 @@ interface CRMContextType {
   addGoal: (goal: Omit<Goal, 'id' | 'created_at'>) => void;
   updateGoalTarget: (goalId: string, targetValue: number) => void;
   deleteGoal: (goalId: string) => void;
+  tasks: Task[];
+  addTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => void;
+  updateTaskStatus: (taskId: string, status: Task['status']) => void;
+  deleteTask: (taskId: string) => Promise<boolean>;
   loading: boolean;
 }
 
@@ -30,6 +34,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [team, setTeam] = useState<Profile[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,12 +45,13 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setLoading(true);
     
     // Buscar dados reais do Supabase
-    const [leadsRes, teamRes, bookingsRes, salesRes, goalsRes] = await Promise.all([
+    const [leadsRes, teamRes, bookingsRes, salesRes, goalsRes, tasksRes] = await Promise.all([
       supabase.from('leads').select('*').order('created_at', { ascending: false }),
       supabase.from('profiles').select('*'),
       supabase.from('bookings').select('*').order('data', { ascending: true }),
       supabase.from('sales').select('*').order('created_at', { ascending: false }),
       supabase.from('goals').select('*'),
+      supabase.from('tasks').select('*').order('data', { ascending: true }),
     ]);
 
     if (leadsRes.data) setLeads(leadsRes.data as Lead[]);
@@ -54,6 +60,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (goalsRes.data) setGoals(goalsRes.data as Goal[]);
     
     if (bookingsRes.data) setBookings(bookingsRes.data as Booking[]);
+    if (tasksRes.data) setTasks(tasksRes.data as Task[]);
     
     setLoading(false);
   };
@@ -67,6 +74,7 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales' }, loadData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'goals' }, loadData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, loadData)
       .subscribe();
 
     return () => {
@@ -233,11 +241,41 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const addTask = async (taskData: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+    const { data, error } = await supabase.from('tasks').insert([taskData]).select();
+    if (data && data.length > 0) {
+      setTasks([...tasks, data[0] as Task]);
+    } else if (error) {
+      console.error('Erro ao adicionar tarefa:', error);
+    }
+  };
+
+  const updateTaskStatus = async (taskId: string, status: Task['status']) => {
+    const { data, error } = await supabase.from('tasks').update({ status }).eq('id', taskId).select();
+    if (data && data.length > 0) {
+      setTasks(tasks.map(t => t.id === taskId ? data[0] as Task : t));
+    } else if (error) {
+      console.error('Erro ao atualizar status da tarefa:', error);
+    }
+  };
+
+  const deleteTask = async (taskId: string): Promise<boolean> => {
+    const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+    if (!error) {
+      setTasks(tasks.filter(t => t.id !== taskId));
+      return true;
+    } else {
+      console.error('Erro ao deletar tarefa:', error);
+      return false;
+    }
+  };
+
   return (
     <CRMContext.Provider
       value={{
         leads,
         bookings,
+        tasks,
         sales,
         goals,
         team,
@@ -246,6 +284,9 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addBooking,
         updateBookingStatus,
         deleteBooking,
+        addTask,
+        updateTaskStatus,
+        deleteTask,
         addTeamMember,
         addSale,
         updateGoalProgress,
