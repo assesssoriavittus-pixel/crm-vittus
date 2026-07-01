@@ -7,7 +7,7 @@ import { Lead, LeadStatus, LeadOrigem } from '@/types';
 import Link from 'next/link';
 
 export default function DashboardPage() {
-  const { leads, bookings, sales, goals, addLead } = useCRM();
+  const { leads, bookings, sales, goals, addLead, team } = useCRM();
   const [timeFilter, setTimeFilter] = useState<'today' | 'week'>('week');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [newLeadSegment, setNewLeadSegment] = useState('');
   const [newLeadValue, setNewLeadValue] = useState(3000);
   const [newLeadOrigin, setNewLeadOrigin] = useState<LeadOrigem>('quiz-instagram');
+  const [newLeadResponsavelId, setNewLeadResponsavelId] = useState('');
 
   // Calculate dynamic stats
   const totalLeads = leads.length;
@@ -189,7 +190,7 @@ export default function DashboardPage() {
       telefone: newLeadPhone || null,
       origem: newLeadOrigin,
       status: 'novo',
-      responsavel_id: 'prof-2', // Default to Vitória
+      responsavel_id: newLeadResponsavelId || (team.length > 0 ? team[0].id : null),
       respostas_quiz: null,
       empresa: newLeadCompany || null,
       segmento: newLeadSegment || null,
@@ -206,6 +207,7 @@ export default function DashboardPage() {
     setNewLeadSegment('');
     setNewLeadValue(3000);
     setNewLeadOrigin('quiz-instagram');
+    setNewLeadResponsavelId('');
     setIsNewLeadModalOpen(false);
   };
 
@@ -1127,6 +1129,22 @@ export default function DashboardPage() {
                   style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', color: 'white', fontSize: '13.5px', outline: 'none' }}
                 />
               </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                Responsável pelo Lead
+              </label>
+              <select 
+                value={newLeadResponsavelId}
+                onChange={(e) => setNewLeadResponsavelId(e.target.value)}
+                style={{ background: '#1c1c24', border: '1px solid rgba(255,255,255,0.05)', padding: '12px', borderRadius: '8px', color: 'white', fontSize: '13.5px', outline: 'none' }}
+              >
+                <option value="">Selecione o responsável...</option>
+                {team.map(member => (
+                  <option key={member.id} value={member.id}>{member.nome}</option>
+                ))}
+              </select>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '10px' }}>

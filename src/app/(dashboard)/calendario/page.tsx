@@ -21,7 +21,7 @@ export default function CalendarPage() {
 
   // New Booking Form State
   const [newLeadId, setNewLeadId] = useState('');
-  const [newConsultorId, setNewConsultorId] = useState('prof-1');
+  const [newConsultorId, setNewConsultorId] = useState('');
   const [newDate, setNewDate] = useState(new Date().toISOString().split('T')[0]);
   const [newTime, setNewTime] = useState('10:00');
   const [newType, setNewType] = useState<BookingTipo>('diagnostico');
@@ -30,7 +30,7 @@ export default function CalendarPage() {
 
   // New Task Form State
   const [newTaskLeadId, setNewTaskLeadId] = useState('');
-  const [newTaskResponsavelId, setNewTaskResponsavelId] = useState('prof-1');
+  const [newTaskResponsavelId, setNewTaskResponsavelId] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('WhatsApp');
   const [newTaskCustomTitle, setNewTaskCustomTitle] = useState('');
   const [newTaskDate, setNewTaskDate] = useState(new Date().toISOString().split('T')[0]);
@@ -64,7 +64,7 @@ export default function CalendarPage() {
 
     addBooking({
       lead_id: newLeadId,
-      consultor_id: newConsultorId,
+      consultor_id: newConsultorId || (team.length > 0 ? team[0].id : ''),
       data: newDate,
       horario_inicio: newTime,
       horario_fim: newEndTime,
@@ -76,7 +76,7 @@ export default function CalendarPage() {
 
     // Reset and Close
     setNewLeadId('');
-    setNewConsultorId('prof-1');
+    setNewConsultorId('');
     setNewDate(new Date().toISOString().split('T')[0]);
     setNewTime('10:00');
     setNewType('diagnostico');
@@ -91,7 +91,7 @@ export default function CalendarPage() {
 
     addTask({
       lead_id: newTaskLeadId || null,
-      responsavel_id: newTaskResponsavelId || null,
+      responsavel_id: newTaskResponsavelId || (team.length > 0 ? team[0].id : null),
       data: newTaskDate,
       titulo: finalTitle,
       descricao: newTaskDescription || null,
@@ -100,7 +100,7 @@ export default function CalendarPage() {
 
     // Reset and Close
     setNewTaskLeadId('');
-    setNewTaskResponsavelId('prof-1');
+    setNewTaskResponsavelId('');
     setNewTaskTitle('WhatsApp');
     setNewTaskCustomTitle('');
     setNewTaskDescription('');
