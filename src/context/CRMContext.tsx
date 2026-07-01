@@ -25,6 +25,8 @@ interface CRMContextType {
   addTask: (task: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => void;
   updateTaskStatus: (taskId: string, status: Task['status']) => void;
   deleteTask: (taskId: string) => Promise<boolean>;
+  toggleTeamMemberActive: (memberId: string, currentStatus: boolean) => Promise<boolean>;
+  deleteTeamMember: (memberId: string) => Promise<boolean>;
   loading: boolean;
 }
 
@@ -280,6 +282,28 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const toggleTeamMemberActive = async (memberId: string, currentStatus: boolean): Promise<boolean> => {
+    const { data, error } = await supabase.from('profiles').update({ ativo: !currentStatus }).eq('id', memberId).select();
+    if (data && data.length > 0) {
+      setTeam(prev => prev.map(m => m.id === memberId ? (data[0] as Profile) : m));
+      return true;
+    } else {
+      console.error('Erro ao atualizar status do colaborador:', error);
+      return false;
+    }
+  };
+
+  const deleteTeamMember = async (memberId: string): Promise<boolean> => {
+    const { error } = await supabase.from('profiles').delete().eq('id', memberId);
+    if (!error) {
+      setTeam(prev => prev.filter(m => m.id !== memberId));
+      return true;
+    } else {
+      console.error('Erro ao deletar colaborador:', error);
+      return false;
+    }
+  };
+
   return (
     <CRMContext.Provider
       value={{
@@ -298,6 +322,8 @@ export const CRMProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateTaskStatus,
         deleteTask,
         addTeamMember,
+        toggleTeamMemberActive,
+        deleteTeamMember,
         addSale,
         updateGoalProgress,
         addGoal,

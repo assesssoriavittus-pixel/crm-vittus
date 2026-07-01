@@ -95,7 +95,20 @@ export default function DashboardLayout({
       if (!session) {
         router.push('/login');
       } else {
-        setIsAuthorized(true);
+        // Verificar se o perfil está ativo no banco
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('ativo')
+          .eq('id', session.user.id)
+          .single();
+
+        if (error || (profile && !profile.ativo)) {
+          console.warn('Usuário inativo ou sem perfil. Deslogando...');
+          await supabase.auth.signOut();
+          router.push('/login');
+        } else {
+          setIsAuthorized(true);
+        }
       }
     };
     

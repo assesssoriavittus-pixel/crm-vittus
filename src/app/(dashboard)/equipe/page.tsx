@@ -2,9 +2,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { useCRM } from '@/context/CRMContext';
+import { createClient } from '@/lib/supabase/client';
 
 export default function TeamPage() {
-  const { team, leads, bookings, sales, addTeamMember } = useCRM();
+  const { team, leads, bookings, sales, addTeamMember, toggleTeamMemberActive, deleteTeamMember } = useCRM();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    fetchUser();
+  }, []);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -116,9 +127,19 @@ export default function TeamPage() {
                 </div>
 
                 <div>
-                  <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white', margin: 0 }}>{member.nome}</h3>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'white', margin: 0 }}>{member.nome}</h3>
+                    <span style={{
+                      display: 'inline-block',
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: member.ativo ? '#10b981' : '#ef4444',
+                      boxShadow: member.ativo ? '0 0 8px #10b981' : '0 0 8px #ef4444'
+                    }}></span>
+                  </div>
                   <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', fontWeight: 600, display: 'block', marginTop: '2px' }}>
-                    {member.cargo}
+                    {member.cargo} {member.ativo ? '' : '(Inativo)'}
                   </span>
                 </div>
               </div>
@@ -148,6 +169,49 @@ export default function TeamPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Actions */}
+              {member.id !== currentUserId && (
+                <div style={{ display: 'flex', gap: '12px', marginTop: 'auto', paddingTop: '10px' }}>
+                  <button
+                    onClick={() => toggleTeamMemberActive(member.id, member.ativo)}
+                    style={{
+                      flex: 1,
+                      padding: '10px 14px',
+                      background: member.ativo ? 'rgba(239, 68, 68, 0.08)' : 'rgba(16, 185, 129, 0.08)',
+                      color: member.ativo ? '#ef4444' : '#10b981',
+                      border: member.ativo ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {member.ativo ? 'Desativar Acesso' : 'Ativar Acesso'}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Deseja realmente excluir ${member.nome}? leads e compromissos dele serão desvinculados.`)) {
+                        await deleteTeamMember(member.id);
+                      }
+                    }}
+                    style={{
+                      padding: '10px 14px',
+                      background: 'rgba(255, 255, 255, 0.02)',
+                      color: '#8e8e93',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Excluir
+                  </button>
+                </div>
+              )}
 
             </div>
           );
